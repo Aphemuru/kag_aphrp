@@ -48,6 +48,9 @@ shared class KnightInfo
 	u8 state;
 	Vec2f slash_direction;
 	s32 shield_down;
+
+	//// OLD MOD COMPATIBILITY ////
+	u8 shieldTimer;
 };
 
 shared class KnightState

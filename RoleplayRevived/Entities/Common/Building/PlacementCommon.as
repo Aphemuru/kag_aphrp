@@ -301,3 +301,51 @@ bool isBuildRayBlocked(Vec2f pos, Vec2f target, Vec2f &out point)
 		   map.rayCastSolid(pos + Vec2f(0, -halfsize), target, point) &&
 		   map.rayCastSolid(pos + Vec2f(-halfsize, 0), target, point);
 }
+
+bool inNoBuildZone(CMap@ map, Vec2f here, TileType buildTile)
+{
+	return inNoBuildZone(null, map, here, buildTile);
+}
+
+bool inNoBuildZone(CBlob@ blob, CMap@ map, Vec2f here, TileType buildTile)
+{
+	bool isLadder = false;
+	bool isSpikes = false;
+	if (blob !is null)
+	{
+		const string bname = blob.getName();
+		isLadder = bname == "ladder";
+		isSpikes = bname == "spikes";
+	}
+
+	const bool buildSolid = (map.isTileSolid(buildTile) || (blob !is null && blob.isCollidable()));
+
+	return (!isLadder && (buildSolid || isSpikes) && map.getSectorAtPosition(here, "no build") !is null);
+}
+
+// This has to exist due to an engine issue where CMap.hasTileSolidBlobs() returns false if the blobtile was placed in the previous tick
+// and an engine issue where CMap.getBlobsFromTile() crashes the server 
+// wonderful game
+bool fakeHasTileSolidBlobs(Vec2f cursorPos, bool toPlaceIsLadder=false)
+{
+	CMap@ map = getMap();
+	CBlob@[] blobsAtPos;
+	
+	map.getBlobsAtPosition(cursorPos + Vec2f(1, 1), blobsAtPos);
+
+	for (int i = 0; i < blobsAtPos.size(); i++)
+	{
+		CBlob@ blobAtPos = blobsAtPos[i];
+		
+		if (blobAtPos !is null && (
+		blobAtPos.hasTag("door") || 
+		blobAtPos.getName() == "wooden_platform" || 
+		(blobAtPos.getName() == "ladder" && !toPlaceIsLadder) || 
+		blobAtPos.getName() == "bridge"))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
